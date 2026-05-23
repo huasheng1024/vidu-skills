@@ -79,7 +79,8 @@ vidu-cli task submit \
 # Text-to-speech
 vidu-cli task tts \
   --prompt "Hello, welcome to Vidu" \
-  --voice-id en_female_1
+  --voice-id en_female_1 \
+  --subtitle-enable
 
 # List available voices
 vidu-cli task tts-voices
@@ -91,11 +92,11 @@ vidu-cli task tts-voices
 |---------|---------|
 | `vidu-cli upload <image>` | Upload image, returns `upload_id` |
 | `vidu-cli task submit --type ... [--prompt ... | --prompt-path ...]` | Submit task, returns `task_id` |
-| `vidu-cli task get <task_id> [--output dir]` | Query task status, optionally download result |
+| `vidu-cli task get <task_id> [--output dir]` | Query task status, optionally download result; downloads subtitle JSON when `subtitle_uri` is present |
 | `vidu-cli task compose --timeline <json>` | Video compose, returns `task_id` |
 | `vidu-cli task lip-sync --video ... --text ...` | Lip sync (TTS mode) |
 | `vidu-cli task lip-sync --video ... --audio ...` | Lip sync (audio file mode) |
-| `vidu-cli task tts [--prompt ... | --prompt-path ... | --text ...] --voice-id ...` | Text-to-speech |
+| `vidu-cli task tts [--prompt ... | --prompt-path ... | --text ...] --voice-id ... [--subtitle-enable false]` | Text-to-speech; subtitles are enabled by default for single-prompt mode |
 | `vidu-cli element create --name ... --image ... [--description ...] [--style ...]` | Create reference element |
 | `vidu-cli element check --name ...` | Check element name availability |
 | `vidu-cli element list [--keyword kw]` | List personal elements |
@@ -107,6 +108,8 @@ vidu-cli task tts-voices
 | `vidu-cli task lip-sync-cost --duration ... --voice-id ...` | Estimate lip-sync task credit cost |
 | `vidu-cli quota pass` | Query claw-pass daily quota |
 | `vidu-cli quota credit` | Query user credit balance |
+
+TTS subtitles are enabled by default for single `--prompt` mode. Use `--subtitle-enable false` to disable subtitle output; multi-segment `--text` mode currently requires `--subtitle-enable false`. Download results with `vidu-cli task get <task_id> --output <dir>`; when `subtitle_uri` is present, this downloads generated audio plus preprocessed subtitle JSON as `{task_id}_subtitle.json`.
 
 ## Task Lifecycle
 

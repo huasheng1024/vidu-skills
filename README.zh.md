@@ -79,7 +79,8 @@ vidu-cli task submit \
 # 文字转语音
 vidu-cli task tts \
   --prompt "你好，欢迎使用 Vidu" \
-  --voice-id zh_female_1
+  --voice-id zh_female_1 \
+  --subtitle-enable
 
 # 列出可用声音
 vidu-cli task tts-voices
@@ -91,11 +92,11 @@ vidu-cli task tts-voices
 |------|------|
 | `vidu-cli upload <image>` | 上传图片，返回 `upload_id` |
 | `vidu-cli task submit --type ... [--prompt ... | --prompt-path ...]` | 提交任务，返回 `task_id` |
-| `vidu-cli task get <task_id> [--output dir]` | 查询任务状态，可下载结果 |
+| `vidu-cli task get <task_id> [--output dir]` | 查询任务状态，可下载结果；存在 `subtitle_uri` 时同时下载字幕 JSON |
 | `vidu-cli task compose --timeline <json>` | 视频合成，返回 `task_id` |
 | `vidu-cli task lip-sync --video ... --text ...` | 口型同步（TTS 模式） |
 | `vidu-cli task lip-sync --video ... --audio ...` | 口型同步（音频模式） |
-| `vidu-cli task tts [--prompt ... | --prompt-path ... | --text ...] --voice-id ...` | 文字转语音 |
+| `vidu-cli task tts [--prompt ... | --prompt-path ... | --text ...] --voice-id ... [--subtitle-enable false]` | 文字转语音；单段输入默认启用字幕 |
 | `vidu-cli element create --name ... --image ... [--description ...] [--style ...]` | 创建参考素材 |
 | `vidu-cli element check --name ...` | 检查素材名称可用性 |
 | `vidu-cli element list [--keyword kw]` | 列出个人素材 |
@@ -107,6 +108,8 @@ vidu-cli task tts-voices
 | `vidu-cli task lip-sync-cost --duration ... --voice-id ...` | 预估口型同步任务积分消耗 |
 | `vidu-cli quota pass` | 查询 claw-pass 每日配额 |
 | `vidu-cli quota credit` | 查询用户积分余额 |
+
+TTS 字幕：单段 `--prompt` 模式默认启用字幕输出。使用 `--subtitle-enable false` 可关闭字幕输出；多段 `--text` 模式当前需要显式加 `--subtitle-enable false`。使用 `vidu-cli task get <task_id> --output <dir>` 下载结果；存在 `subtitle_uri` 时会下载生成音频，并把字幕预处理后保存为 `{task_id}_subtitle.json`。
 
 ## 任务状态
 

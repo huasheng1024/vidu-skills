@@ -75,7 +75,7 @@ vidu-cli task get <task_id> [--output/-o <dir>]
 
 Returns: `task_id`, `state`, `type`, `model`; on failed: `err_code`, `err_msg`. **Note**: `ok` may be `true` even when `state` is `failed` — always check `state` to determine success.
 
-`--output <dir>` (optional): when state is `success`, downloads all media files to `<dir>` and returns `downloaded_files` (list of local paths). If state is not `success`, returns `download_skipped: "task not ready"`.
+`--output <dir>` (optional): when state is `success`, downloads all media files to `<dir>` and returns `downloaded_files` (list of local paths). For TTS tasks, when `subtitle_uri` is present, it downloads both generated audio and subtitle JSON. If state is not `success`, returns `download_skipped: "task not ready"`.
 
 ### Search community references
 
@@ -502,6 +502,7 @@ Returns: `{"ok": true, "count": 90+, "voice_ids": [...]}`
 vidu-cli task tts \
   --prompt "text" \
   --voice-id "Chinese (Mandarin)_Reliable_Executive" \
+  --subtitle-enable \
   --speed 1.0 \
   --volume 80 \
   --emotion "happy" \
@@ -518,6 +519,7 @@ vidu-cli task tts \
 | `--volume` | No | 80 | 0-100 | Volume level (values outside range cause validation error) |
 | `--emotion` | No | - | Any text | Emotion hint |
 | `--language-boost` | No | - | Chinese, English, auto | Enhance specific language recognition |
+| `--subtitle-enable` | No | true | true/false | Enable subtitle JSON output. Omitted means true; use `--subtitle-enable false` to disable it. First version supports subtitle output only with single `--prompt`, so multi-segment `--text` mode requires `--subtitle-enable false`. |
 | `--schedule-mode` | No | auto | claw_pass, normal | Schedule mode: `claw_pass` (use daily quota) or `normal` (use credits). Auto-detected from claw-pass status if omitted. |
 
 List available voices: `vidu-cli task tts-voices` (grouped by language with count)
@@ -626,7 +628,7 @@ Download media on success:
 vidu-cli task get "$TASK_ID" --output ./downloads
 ```
 
-- Downloads all media files to `./downloads/` as `{task_id}_{index}.mp4` (index is 0-based: `{task_id}_0.mp4`, `{task_id}_1.mp4`, etc.)
+- Downloads all media files to `./downloads/` as `{task_id}_{index}.mp4` (index is 0-based: `{task_id}_0.mp4`, `{task_id}_1.mp4`, etc.); for TTS tasks with `subtitle_uri`, also downloads preprocessed subtitle JSON as `{task_id}_subtitle.json`
 - Returns `downloaded_files` (list of local paths)
 - If not yet `success`: returns `download_skipped: "task not ready"`
 
