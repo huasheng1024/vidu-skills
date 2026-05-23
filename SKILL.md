@@ -1,7 +1,7 @@
 ---
 name: vidu-skills
 description: Generate video and images by calling the official Vidu API via vidu CLI. Use when the user wants text-to-image, text-to-video, image-to-video, head-tail-image-to-video, reference-to-image, reference-to-video, lip-sync, text-to-speech, video-compose, Create References, or to submit or check Vidu tasks. Requires VIDU_TOKEN and optional VIDU_BASE_URL.
-version: 1.4.11
+version: 1.4.12
 homepage: https://www.vidu.cn/
 primaryEnv: VIDU_TOKEN
 metadata: {"openclaw":{"requires":{"bins":["node","npm","vidu-cli"],"env":["VIDU_TOKEN"]},"primaryEnv":"VIDU_TOKEN","install":[{"id":"vidu-cli","kind":"node","package":"vidu-cli","bins":["vidu-cli"],"label":"Install vidu-cli via npm (requires Node.js >=14; postinstall downloads a platform binary from GitHub)"}]}}
@@ -42,12 +42,12 @@ Generate AI videos and images with Vidu via `vidu-cli` — text-to-image, text-t
 |---------|---------|
 | `vidu-cli upload <image_path>` | Upload image → `upload_id`, `ssupload_uri` |
 | `vidu-cli task submit --type ... [--prompt TEXT \| --prompt-path PATH] [options]` | Submit task → `task_id`. `--prompt` is inline text; `--prompt-path` reads a UTF-8 file (≤1MiB). When both are given, `--prompt` wins. `--image`: local path, URL, or `ssupload:?id=...` (auto-upload). `--video`: local path or `ssupload:?id=...` (character2video + 3.2_a only, auto-upload; URLs not supported). `--audio`: local path or `ssupload:?id=...` (character2video + 3.2_a only; URLs not supported). |
-| `vidu-cli task get <task_id> [--output/-o <dir>]` | Query task → `state`, `type`, `model`; use `--output` to download media on success |
+| `vidu-cli task get <task_id> [--output/-o <dir>]` | Query task → `state`, `type`, `model`; use `--output` to download media on success, plus subtitle JSON when `subtitle_uri` is present |
 | `vidu-cli task compose --timeline <json> [--width N --height N] [--schedule-mode <mode>]` | Compose video from timeline → `task_id`. Query with `task get`. Supports `--schedule-mode` (auto-detected if omitted). **MUST read references/compose.md before building the timeline JSON — do not guess the schema.** |
 | `vidu-cli task lip-sync --video <path> --text <text> [options]` | Lip-sync with text-to-speech → `task_id`. Supports `--schedule-mode` (auto-detected if omitted). |
 | `vidu-cli task lip-sync --video <path> --audio <path>` | Lip-sync with audio file → `task_id`. Supports `--schedule-mode` (auto-detected if omitted). |
 | `vidu-cli task lip-sync-voices` | List available lip-sync voices (90+, Chinese/English/Cantonese/Cartoon etc.) |
-| `vidu-cli task tts [--prompt TEXT \| --prompt-path PATH] --voice-id ...` | Text-to-speech → `task_id`. `--prompt` is inline text; `--prompt-path` reads a UTF-8 file (≤1MiB). Multi-segment `--text` remains supported. `--prompt` wins when both are given. `--prompt-path` is mutually exclusive with `--text`. Supports `--schedule-mode` (auto-detected if omitted). |
+| `vidu-cli task tts [--prompt TEXT \| --prompt-path PATH] --voice-id ...` | Text-to-speech → `task_id`. `--prompt` is inline text; `--prompt-path` reads a UTF-8 file (≤1MiB). Multi-segment `--text` remains supported. `--prompt` wins when both are given. `--prompt-path` is mutually exclusive with `--text`. Subtitles are enabled by default for single `--prompt` / `--prompt-path` mode; use `--subtitle-enable false` to disable. Multi-segment `--text` currently requires `--subtitle-enable false`. Supports `--schedule-mode` (auto-detected if omitted). |
 | `vidu-cli task tts-voices` | List available TTS voices (300+, 20+ languages) |
 | `vidu-cli task cost --type ... --model-version ... --duration ...` | Query credit cost for video/image tasks (estimate before submitting) |
 | `vidu-cli task tts-cost --text ... --voice-id ...` | Query credit cost for TTS tasks (priced by character count; `--text` required) |
@@ -125,7 +125,14 @@ Content you send (prompts, images, task settings) goes to Vidu’s API. Confirm 
 5. `vidu-cli task submit ...` → store `task_id` and `trace_id`.
    - **schedule-mode auto-detection**: if `--schedule-mode` is omitted, CLI queries claw-pass status and uses `claw_pass` when user has an active pass, otherwise `normal`. If submit fails with `ClawPassExplicitModeRequired`, tell the user their daily claw-pass quota is exhausted. Do not retry automatically — suggest re-submitting with `--schedule-mode normal` to use credits instead, or waiting for the next quota refresh.
 6. `vidu-cli task get <task_id>` until `success` or `failed`; use `--output <dir>` to download media on success.
-7. On success return `downloaded_files` (if `--output` used) or prompt user to re-run with `--output`; on task failure return `err_code` / `err_msg`; on CLI `ok: false` return `error` fields verbatim.
+7. On success return `downloaded_files` (if `--output` used; includes subtitle JSON when `subtitle_uri` is present) or prompt user to re-run with `--output`; on task failure return `err_code` / `err_msg`; on CLI `ok: false` return `error` fields verbatim.
+
+### For task tts
+
+- TTS subtitle output is enabled by default for single `--prompt` mode.
+- Use `--subtitle-enable false` to disable subtitle output; multi-segment `--text` mode currently requires `--subtitle-enable false`.
+- `--subtitle-enable` and `--subtitle-enable true` are equivalent.
+- Download TTS results with `vidu-cli task get <task_id> --output <dir>`; when `subtitle_uri` is present, this downloads generated audio plus preprocessed subtitle JSON as `{task_id}_subtitle.json`.
 
 ### For task compose (video composition)
 
@@ -144,7 +151,7 @@ Content you send (prompts, images, task settings) goes to Vidu’s API. Confirm 
 ## Output to the user
 
 - After **submit**: return **`task_id`** and **`trace_id`**; state that processing is in progress.
-- After **query**: if `state` is success, return **`downloaded_files`** (if `--output` was used) or the `task_id` with a note to re-run with `--output <dir>` to download; if failed, return **`err_code`** and **`err_msg`** exactly (note: response may still have `ok: true` while `state` is `failed`).
+- After **query**: if `state` is success, return **`downloaded_files`** (if `--output` was used; includes subtitle JSON when `subtitle_uri` is present) or the `task_id` with a note to re-run with `--output <dir>` to download; if failed, return **`err_code`** and **`err_msg`** exactly (note: response may still have `ok: true` while `state` is `failed`).
 - On **CLI failure** (`ok: false`): report `error.type`, `http_status`, `code`, `message` exactly — **do not infer causes**.
 
 ---
